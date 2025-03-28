@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Híbrida - Laboratorio</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Estilos para el modo oscuro */
+        .dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        .dark-mode .card {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border: 1px solid #333;
+        }
+        .dark-mode .btn {
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Botón para cambiar a modo oscuro -->
+    <div class="container mt-3 text-end">
+        <button id="modo-oscuro-btn" class="btn btn-dark" cla >Modo Oscuro</button>
+    </div>
+
+    <div class="container my-5">
+        <h1 class="text-center">Blockchain de financiamiento de partidos políticos - Laboratorio</h1>
+
+        <!-- Formulario para agregar transacción -->
+        <div class="mb-4">
+            <h3>Crear Transacción</h3>
+            <div class="mb-2">
+                <label for="emisor" class="form-label">Emisor</label>
+                <input type="text" id="emisor" class="form-control" placeholder="Ingrese el emisor">
+            </div>
+            <div class="mb-2">
+                <label for="receptor" class="form-label">Receptor</label>
+                <input type="text" id="receptor" class="form-control" placeholder="Ingrese el receptor">
+            </div>
+            <div class="mb-2">
+                <label for="monto" class="form-label">Monto</label>
+                <input type="number" id="monto" class="form-control" placeholder="Ingrese el monto">
+            </div>
+            <div class="mb-2">
+                <label for="entidad" class="form-label">Entidad</label>
+                <input type="text" id="entidad" class="form-control" placeholder="Ingrese la entidad">
+            </div>
+            <button id="agregar-transaccion" class="btn btn-primary mt-2">Agregar Transacción</button>
+        </div>
+
+        <!-- Botón para minar bloque -->
+        <div class="mb-4">
+            <h3>Minar Bloque</h3>
+            <button id="minar-bloque" class="btn btn-success">Minar Bloque</button>
+        </div>
+
+        <!-- Visualización de la cadena -->
+        <div class="mb-4">
+            <h3>Cadena de Bloques</h3>
+            <div id="cadena-datos"></div>
+        </div>
+    </div>
+
+    <script>
+        // Función para cambiar entre modo claro y oscuro
+        document.getElementById('modo-oscuro-btn').addEventListener('click', function () {
+            document.body.classList.toggle('dark-mode');
+            this.textContent = document.body.classList.contains('dark-mode') ? 'Modo Claro' : 'Modo Oscuro';
+        });
+
+        // Función para cargar la cadena
+        async function cargarCadena() {
+            const respuesta = await fetch('/chain');
+            const datos = await respuesta.json();
+            const cadena = datos.chain;
+
+            // Construir visualización
+            const contenedor = document.getElementById('cadena-datos');
+            contenedor.innerHTML = ''; // Limpiar contenido previo
+
+            cadena.forEach(bloque => {
+                const bloqueHtml = `
+                    <div class="card my-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Bloque ${bloque.indice}</h5>
+                            <p><strong>Fecha y Hora:</strong> ${bloque.timestamp}</p>
+                            <p><strong>Transacciones:</strong> ${JSON.stringify(bloque.transacciones, null, 2)}</p>
+                            <p><strong>Hash Previo:</strong> ${bloque.previo_hash}</p>
+                            <p><strong>Hash Actual:</strong> ${bloque.hash_actual}</p>
+                        </div>
+                    </div>
+                `;
+                contenedor.innerHTML += bloqueHtml;
+            });
+        }
+
+        // Función para agregar transacciones
+        document.getElementById('agregar-transaccion').addEventListener('click', async function () {
+            const emisor = document.getElementById('emisor').value;
+            const receptor = document.getElementById('receptor').value;
+            const monto = document.getElementById('monto').value;
+            const entidad = document.getElementById('entidad').value;
+
+            const respuesta = await fetch('/agregar_transaccion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ emisor, receptor, monto, entidad })
+            });
+            if (respuesta.ok) {
+                alert('Transacción agregada con éxito.');
+                document.getElementById('emisor').value = '';
+                document.getElementById('receptor').value = '';
+                document.getElementById('monto').value = '';
+                document.getElementById('entidad').value = '';
+            } else {
+                alert('Error al agregar transacción.');
+            }
+        });
+
+        // Función para minar un bloque
+        document.getElementById('minar-bloque').addEventListener('click', async function () {
+            const respuesta = await fetch('/minar_bloque', { method: 'POST' });
+            if (respuesta.ok) {
+                alert('Bloque minado con éxito.');
+                cargarCadena(); // Actualizar la cadena
+            } else {
+                alert('Error al minar el bloque.');
+            }
+        });
+
+        // Cargar la cadena al inicio
+        cargarCadena();
+    </script>
+</body>
+</html>
